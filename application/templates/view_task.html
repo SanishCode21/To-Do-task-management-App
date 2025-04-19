@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ task.title }}</h2>
+    <p><strong>Description:</strong> {{ task.description }}</p>
+    <p><strong>Due Date:</strong> {{ task.due_date.strftime('%Y-%m-%d') if task.due_date }}</p>
+    <p><strong>Priority:</strong> {{ task.priority }}</p>
+    <p><strong>Category:</strong> {{ task.category }}</p>
+    <p><strong>Status:</strong> {% if task.is_complete %}✅ Completed{% else %}⏳ Pending{% endif %}</p>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back</a>
+</div>
+{% endblock %}

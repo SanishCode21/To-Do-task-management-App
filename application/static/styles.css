@@ -1,0 +1,23 @@
+
+h2 {
+    color: #343a40;
+}
+
+body {
+    background: linear-gradient(to right, #b0b6cf, #d4e1c8);
+}
+
+.card {
+    border: none;
+    border-radius: 1rem;
+    width: 30rem;
+    justify-content: center;
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+h3 {
+    color: #343a40;
+}
