@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
 from flask_login import login_user, login_required, logout_user, current_user
-
+from sqlalchemy import asc, desc
 from functools import wraps
 from sqlalchemy import func
 from flask import current_app as app
@@ -11,7 +11,6 @@ from application.models import *
 
 
 @app.route("/")
-@login_required
 def index():
     return render_template("index.html")
 
@@ -55,28 +54,45 @@ def login():
 
     return render_template("login.html")
 
+
 # Dashboard
-#@app.route("/dashboard")
-#@login_required
-#def dashboard():
-#    tasks = Task.query.filter_by(user_id=current_user.id).all()
-#    return render_template("dashboard.html", tasks=tasks)
-
-
 #Show all task to specific user.
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    filter_type = request.args.get('filter', 'all')
 
-    if filter_type == 'completed':
-        tasks = Task.query.filter_by(user_id=current_user.id, is_complete=True).all()
-    elif filter_type == 'pending':
-        tasks = Task.query.filter_by(user_id=current_user.id, is_complete=False).all()
+    #category = request.args.get('category')
+    #if category:
+    #    tasks = Task.query.filter_by(user_id=current_user.id, category=category).all()
+    #else:
+    #    tasks = Task.query.filter_by(user_id=current_user.id).all()
+    #categories = db.session.query(Task.category).distinct().all()
+    #categories = [cat[0] for cat in categories]
+    #return render_template('dashboard.html', tasks=tasks, filter_type=filter_type, categories=categories)
+
+
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '', type=str)
+    sort_by = request.args.get('sort_by', 'due_date', type=str)
+    order = request.args.get('order', 'asc')
+
+    query = Task.query.filter_by(user_id=current_user.id)
+
+    # Search filter
+    if search:
+        query = query.filter(Task.title.ilike(f'%{search}%'))
+
+    # Sorting logic
+    if sort_by == 'priority':
+        query = query.order_by(asc(Task.priority)) if order == 'asc' else query.order_by(desc(Task.priority))
+    elif sort_by == 'title':
+        query = query.order_by(asc(Task.title)) if order == 'asc' else query.order_by(desc(Task.title))
     else:
-        tasks = Task.query.filter_by(user_id=current_user.id).all()
+        query = query.order_by(asc(Task.due_date)) if order == 'asc' else query.order_by(desc(Task.due_date))
 
-    return render_template("dashboard.html", tasks=tasks, filter_type=filter_type)
+    tasks = query.paginate(page=page, per_page=5)
+
+    return render_template("dashboard.html", tasks=tasks, search=search, sort_by=sort_by, order=order)
 
 
 @app.route("/logout")
@@ -179,3 +195,33 @@ def toggle_complete(id):
     return redirect(url_for('dashboard'))
 
 
+import csv
+from io import StringIO
+from flask import make_response
+
+@app.route('/export')
+@login_required
+def export_tasks():
+    tasks = Task.query.filter_by(user_id=current_user.id).order_by(Task.due_date).all()
+
+    si = StringIO()
+    writer = csv.writer(si)
+
+    # Header row
+    writer.writerow(['Title', 'Description', 'Due Date', 'Priority', 'Category', 'Completed'])
+
+    # Task rows
+    for task in tasks:
+        writer.writerow([
+            task.title,
+            task.description,
+            task.due_date.strftime('%Y-%m-%d') if task.due_date else '',
+            task.priority,
+            task.category,
+            'Yes' if task.is_complete else 'No'
+        ])
+
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = "attachment; filename=tasks.csv"
+    output.headers["Content-type"] = "text/csv"
+    return output

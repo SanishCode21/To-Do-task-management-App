@@ -1,4 +1,4 @@
-from application.init import create_app
+from application.init import *
 from application.models import db
 
 

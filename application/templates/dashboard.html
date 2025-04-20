@@ -1,34 +1,109 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container mt-4">
-    <h2>Your Tasks</h2>
-
-    <div class="mb-3">
-        <a href="{{ url_for('dashboard', filter='all') }}" class="btn btn-secondary">All</a>
-        <a href="{{ url_for('dashboard', filter='completed') }}" class="btn btn-success">Completed</a>
-        <a href="{{ url_for('dashboard', filter='pending') }}" class="btn btn-warning">Pending</a>
-        <a href="{{ url_for('add_task') }}" class="btn btn-primary float-end">+ Add Task</a>
+<div class="container mt-5 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fw-bold text-primary">🗂️ Your Tasks</h2>
+        <a href="{{ url_for('add_task') }}" class="btn btn-success">+ Add Task</a>
     </div>
 
+    <!-- Filter + Search -->
+    <form method="get" class="row g-2 mb-4">
+        <div class="col-md-4">
+            <input type="text" name="search" placeholder="🔍 Search tasks" class="form-control" value="{{ search }}">
+        </div>
+        <div class="col-md-3">
+            <select name="sort_by" class="form-select">
+                <option value="due_date" {% if sort_by=='due_date' %}selected{% endif %}>Sort by Due Date</option>
+                <option value="priority" {% if sort_by=='priority' %}selected{% endif %}>Sort by Priority</option>
+                <option value="title" {% if sort_by=='title' %}selected{% endif %}>Sort by Title</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="order" class="form-select">
+                <option value="asc" {% if order=='asc' %}selected{% endif %}>Asc</option>
+                <option value="desc" {% if order=='desc' %}selected{% endif %}>Desc</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-outline-primary w-100">Apply Filters</button>
+        </div>
+    </form>
+
+    <!-- Task Cards -->
     {% for task in tasks %}
-    <div class="card mb-2 {% if task.is_complete %}bg-light text-muted{% endif %}">
+    <div
+        class="card shadow-sm mb-3 border {% if task.is_complete %}border-success{% else %}border-secondary{% endif %}">
         <div class="card-body">
-            <h5>{{ task.title }} {% if task.priority %}<span class="badge bg-info">{{ task.priority }}</span>{% endif %}
-            </h5>
-            <p>{{ task.description }}</p>
-            <p><strong>Due:</strong> {{ task.due_date.strftime('%Y-%m-%d') if task.due_date }}</p>
-            <p><strong>Category:</strong> {{ task.category }}</p>
-            <a href="{{ url_for('view_task', id=task.id) }}" class="btn btn-sm btn-outline-dark">View</a>
-            <a href="{{ url_for('edit_task', id=task.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-            <a href="{{ url_for('delete_task', id=task.id) }}" class="btn btn-sm btn-outline-danger">Delete</a>
-            <a href="{{ url_for('toggle_complete', id=task.id) }}"
-                class="btn btn-sm {% if task.is_complete %}btn-danger{% else %}btn-success{% endif %}">
-                {% if task.is_complete %}Task Pending...{% else %}Task Complete ✅{% endif %}
-            </a>
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h5 class="card-title fw-semibold">
+                        {{ task.title }}
+                        {% if task.priority %}
+                        <span class="badge 
+                            {% if task.priority == 'High' %} bg-danger
+                            {% elif task.priority == 'Medium' %} bg-warning text-dark
+                            {% else %} bg-success
+                            {% endif %}">
+                            {{ task.priority }}
+                        </span>
+                        {% endif %}
+                    </h5>
+                    <p class="card-text">{{ task.description }}</p>
+                    <p class="mb-1"><strong>Due:</strong> {{ task.due_date.strftime('%Y-%m-%d') if task.due_date }}</p>
+                    <p class="mb-1"><strong>Category:</strong> {{ task.category }}</p>
+                </div>
+                <div class="text-end">
+                    <a href="{{ url_for('view_task', id=task.id) }}" class="btn btn-sm btn-outline-dark mb-1">View</a>
+                    <a href="{{ url_for('edit_task', id=task.id) }}"
+                        class="btn btn-sm btn-outline-primary mb-1">Edit</a>
+                    <a href="{{ url_for('delete_task', id=task.id) }}"
+                        class="btn btn-sm btn-outline-danger mb-1">Delete</a>
+                    <a href="{{ url_for('toggle_complete', id=task.id) }}"
+                        class="btn btn-sm {% if task.is_complete %}btn-danger{% else %}btn-success{% endif %} mb-1">
+                        {% if task.is_complete %}Mark as Pending{% else %}Mark as Complete ✅{% endif %}
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
     {% endfor %}
+
+    <!-- Export Button -->
+    <div class="text-center">
+        <a href="{{ url_for('export_tasks') }}" class="btn btn-outline-success mt-3">
+            📤 Export Tasks to CSV
+        </a>
+    </div>
+
+    <!-- Pagination -->
+    <nav aria-label="Task pagination">
+        <ul class="pagination justify-content-center mt-4">
+            {% if tasks.has_prev %}
+            <li class="page-item">
+                <a class="page-link"
+                    href="{{ url_for('dashboard', page=tasks.prev_num, search=search, sort_by=sort_by, order=order) }}">Previous</a>
+            </li>
+            {% endif %}
+
+            {% for p in tasks.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+            {% if p %}
+            <li class="page-item {% if tasks.page == p %}active{% endif %}">
+                <a class="page-link"
+                    href="{{ url_for('dashboard', page=p, search=search, sort_by=sort_by, order=order) }}">{{ p }}</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+            {% endfor %}
+
+            {% if tasks.has_next %}
+            <li class="page-item">
+                <a class="page-link"
+                    href="{{ url_for('dashboard', page=tasks.next_num, search=search, sort_by=sort_by, order=order) }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
 </div>
 {% endblock %}
-
 

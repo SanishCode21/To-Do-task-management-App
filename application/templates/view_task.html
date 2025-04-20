@@ -1,12 +1,51 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container mt-4">
-    <h2>{{ task.title }}</h2>
-    <p><strong>Description:</strong> {{ task.description }}</p>
-    <p><strong>Due Date:</strong> {{ task.due_date.strftime('%Y-%m-%d') if task.due_date }}</p>
-    <p><strong>Priority:</strong> {{ task.priority }}</p>
-    <p><strong>Category:</strong> {{ task.category }}</p>
-    <p><strong>Status:</strong> {% if task.is_complete %}✅ Completed{% else %}⏳ Pending{% endif %}</p>
-    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back</a>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h3 class="card-title mb-4 text-primary">
+                        📝 {{ task.title }}
+                    </h3>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <strong>Description:</strong><br>
+                            <span>{{ task.description or 'No description provided.' }}</span>
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Due Date:</strong>
+                            <span>{{ task.due_date.strftime('%Y-%m-%d') if task.due_date else 'No due date' }}</span>
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Priority:</strong>
+                            <span
+                                class="badge bg-{{ 'danger' if task.priority == 'High' else 'warning' if task.priority == 'Medium' else 'secondary' }}">
+                                {{ task.priority }}
+                            </span>
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Category:</strong>
+                            <span>{{ task.category or 'Uncategorized' }}</span>
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Status:</strong>
+                            <span class="fw-bold text-{{ 'success' if task.is_complete else 'warning' }}">
+                                {% if task.is_complete %}
+                                ✅ Completed
+                                {% else %}
+                                ⏳ Pending
+                                {% endif %}
+                            </span>
+                        </li>
+                    </ul>
+                    <div class="mt-4 d-flex justify-content-end">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">🔙 Back to Dashboard</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
+
