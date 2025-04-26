@@ -11,7 +11,7 @@ class TaskListAPI(Resource):
             return {"error": "Unauthorized"}, 401
 
         tasks = Task.query.filter_by(user_id=current_user.id).all()
-        return [{
+        return jsonify([{
             'id': task.id,
             'title': task.title,
             'description': task.description,
@@ -19,7 +19,7 @@ class TaskListAPI(Resource):
             'category': task.category,
             'due_date': task.due_date.isoformat() if task.due_date else None,
             'is_complete': task.is_complete
-        } for task in tasks]
+        } for task in tasks])
 
     def post(self):
         if not current_user.is_authenticated:
